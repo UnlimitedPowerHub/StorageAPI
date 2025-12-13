@@ -1,84 +1,186 @@
 
-
 import json
 
+import string , secrets 
 
-db_file = 'data/db.json'
-utf8 = "utf-8"
-
+utf_8 = "utf-8"
 
 class DB:
     
-    @staticmethod
-    def load():
-        
-        with open(db_file,'r',encoding=utf8) as file:
+    def __init__(self,db_name=str):
+        self.db_file = f"data/{db_name}.json"
+
+    def load(self):
+        with open(self.db_file,'r',encoding=utf_8) as file:
             return json.load(file)
-        
-    @staticmethod
-    def save(data):
-        
-        with open(db_file,'w',encoding='utf-8') as file:
+
+    def save(self,data):
+        with open(self.db_file,'w',encoding=utf_8) as file:
             json.dump(data,file,indent=4)
-        
-    @staticmethod
-    def get_password():
-        
-        return DB.load()['password']
-    
-    @staticmethod
-    def get_bots():
-        
-        return DB.load()['clients']
             
+    def getAll(self):
+        """
+        input: Nothing
+        
+        output: all data of database
+        """
+        return DB.load(self)
     
-    @staticmethod
-    def add_bot_client(bot_username):
+    def exist(self,a):
+        """
+        input: key
         
-        db_data = DB.load()
+        output: True if key is exist in database else False
+        """
+        return bool(str(a) in DB.getAll(self))
+    
+    def setKey(self,a,b):
+        """
+        input: key & value
         
-        bot_data = {
-            'sessions':{},
-            'messages':{}
-        }
+        output: void
+        """
+        db_data = DB.load(self)
+        db_data[str(a)] = b
+        DB.save(self,db_data)
         
-        db_data['clients'][str(bot_username)] = bot_data
+    def getKey(self,a):
+        """
+        input: key
         
-        DB.save(db_data)
+        output: goal key value
+        """
+        return DB.load(self)[str(a)]
         
-    @staticmethod
-    def get_messages_from_client(bot_username):
+    def removeKey(self,a):
+        """
+        input: Key
+        
+        output: void
+        """
+        db_data = DB.load(self)
+        del db_data[str(a)]
+        DB.save(self,db_data)
+    
+    def getNested(self,a):
+        """
+        input: key or key addres
                 
-        return DB.load()['clients'][str(bot_username)]['messages']
+        output: your goal key or key addres
+        """
+        db_data = DB.load(self)
+        goal = []
+        m = 0
+        for key in a:
+            if m == 0:
+                goal = db_data[str(key)]
+            else:
+                goal = goal[str(key)]
+            m+=1
+        return goal
+
+    def setNested(self,a,b):
+        """
+        input: key or key addres & value
+        
+        key addres must be like: ['key1',key2]
+        
+        for example data we have and we want set it
+        
+        we_db = { "key1": { "key2":"value" } }
+                
+        we_db = DB('json')
+        we_db.setNested(we_db class,['key1','key2'],"Reza")
+        
+        resault: { "key1": { "key2":"Reza" } }
+        
+        output: void
+        """
+        db_data = DB.load(self)
+        goal = db_data
+        m = 0
+        for key in a:
+            if m == len(a) - 1:
+                goal[key] = b
+            else:
+                if key not in goal:
+                    goal[key] = {}
+                goal = goal[key]
+            m+=1
+        DB.save(self,db_data)
+
+    def removeNested(self,a):
+        """
+        input: Key or Key addres
+        
+        key addres must be like: ['key1','key2']
+         
+        example data we have and we want remove a key in it:
+        
+        we_db = { "key1": { "key2":"value" } }
+        
+        we_db = DB('json')
+        we_db.removeNested(we_db class,['key1','key2'])
+        
+        resault: { "key1": {} }
+        
+        output: void
+        """
+        db_data = DB.load(self)
+        goal = db_data
+        m = 0
+        for key in a:
+            if m == len(a) - 1:
+                del goal[key]
+            else:
+                if key not in goal:
+                    goal[key] = {}
+                goal = goal[key]
+            m+=1
+        DB.save(self,db_data)
+
+    def generateID():
+        """
+        input: Nothing
+        
+        output: randon id
+        """
+        a = string.ascii_lowercase + string.digits
+        return f"0c_{"".join(secrets.choice(a) for _ in range(5))}"
+
+# Add SQLite In Another Updates
+
+# import sqlite lib
+# import sqlite3
+
+# open conntextion
+# conn = sqlite3.connect('db.db')
+# c = conn.cursor()
+
+# create database if not exists
+# c.execute("CREATE TABLE IF NOT EXISTS carts(id INTEGER PRINARY KEY,name TEXT,url TEXT)")
+
+# add data to database
+# c.execute("INSERT INTO carts(id,name,url) VALUES (?,?,?)",(1,'Amirreza','https://i.com/'))
+# conn.commit()
+
+# remove data in database
+# c.execute("DELETE FROM user WHERE age = ?",(17,))
+# conn.commit()
+
+# update data in database
+# c.execute("UPDATE user SET age = ? WHERE name = ?",(17,'Mamad',))
+# conn.commit()
+
+# get all
+# c.execute('SELECT * FROM carts')
+# rows = c.fetchall()
+# for row in rows:
+#     print(row)
     
-    @staticmethod
-    def get_sessions_from_client(bot_username):
-        
-        return DB.load()['clients'][str(bot_username)]['sessions']
-        
-    @staticmethod
-    def add_message_to_client(bot_username,message):
-        
-        db_data = DB.load()
-        
-        db_data['clients'][str(bot_username)]['messages'][str(message['id'])] = message
-        
-        DB.save(db_data)
-        
-    @staticmethod
-    def add_session_to_client(bot_username,session):
-        
-        db_data = DB.load()
-        
-        db_data['clients'][str(bot_username)]['sessions'] = session
-        
-        DB.save(db_data)
-        
-    @staticmethod
-    def remove_session_from_client(bot_username,session_id):
-        
-        db_data = DB.load()
-        
-        del db_data['clients'][str(bot_username)]['sessions'][str(session_id)]
-        
-        DB.save(db_data)
+# get carts where cart name = Amirreza
+# c.execute("SELECT * FROM carts WHERE name = ?",("Amirreza",))
+# print(c.fetchall())
+
+# close connection
+# conn.close()
